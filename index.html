@@ -114,6 +114,26 @@ canvas {border:3px solid var(--morado);border-radius:16px;width:100%;height:200p
 .btn {background:linear-gradient(135deg,var(--morado),var(--rosa));color:white;padding:24px;font-size:28px;border:none;border-radius:20px;cursor:pointer;margin:50px 30px;width:calc(100% - 60px);font-weight:bold;box-shadow:0 12px 35px rgba(142,68,173,0.4);transition:0.3s}
 .btn:hover {transform:translateY(-4px);box-shadow:0 18px 50px rgba(142,68,173,0.5)}
 .limpiar {background:#e74c3c;color:white;padding:10px 20px;border:none;border-radius:10px;margin-top:10px;cursor:pointer;margin-left: 10px; font-size: 14px;}
+
+.limpiar-todo-btn {
+    background:#e74c3c;
+    color:white;
+    padding:20px;
+    font-size:24px;
+    border:none;
+    border-radius:20px;
+    cursor:pointer;
+    margin:20px 30px;
+    width:calc(100% - 60px);
+    font-weight:bold;
+    box-shadow:0 10px 30px rgba(231,76,60,0.4);
+    transition:0.3s;
+}
+.limpiar-todo-btn:hover {
+    transform:translateY(-4px);
+    box-shadow:0 16px 45px rgba(231,76,60,0.5);
+}
+
 </style>
 </head>
 <body>
@@ -152,7 +172,15 @@ canvas {border:3px solid var(--morado);border-radius:16px;width:100%;height:200p
 <input id="nombre-paciente" placeholder="Nombre Completo *" required>
 <input id="edad-paciente" type="number" placeholder="Edad">
 <select id="genero-paciente"><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
-<input id="tel-paciente" type="tel" placeholder="Teléfono" pattern="\d{10}" required>
+<input id="tel-paciente" 
+       type="number" 
+       inputmode="numeric" 
+       maxlength="10" 
+       min="1000000000" 
+       max="9999999999" 
+       placeholder="Teléfono (10 dígitos)" 
+       required 
+       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,10)">
 <input id="ocupacion-paciente" placeholder="Ocupación">
 <select id="dominancia-paciente"><option>Diestro</option><option>Zurdo</option></select>
 </div>
@@ -312,6 +340,7 @@ expediente .**</textarea>
 </section>
 
 <button type="button" class="btn" onclick="generarPDF()">GENERAR PDF</button>
+<button type="button" class="limpiar-todo-btn" onclick="limpiarTodo()">LIMPIAR TODO</button>
 </form>
 </div>
 
@@ -657,6 +686,67 @@ async function generarPDF() {
   }
 }
 
+function limpiarTodo() {
+  if (!confirm('¿Estás seguro de que quieres limpiar el formulario? Se borrarán todos los datos del paciente, firmas e imágenes.')) {
+    return; // Cancela si dice "No"
+  }
+
+  // 1. Limpiar campos de texto, número, teléfono, ocupación, textareas del paciente
+  document.querySelectorAll('#nombre-paciente, #edad-paciente, #tel-paciente, #ocupacion-paciente, ' +
+                             '#mc, #pa, #localizacion-dolor, #patron-irradiacion, ' +
+                             '#rom-activo, #rom-pasivo, #fuerza-muscular, ' +
+                             '#piel-descripcion, #cicatrices-descripcion, #temp-local, ' +
+                             '#auscultacion, #escalas-hallazgos, #pruebas-especiales, ' +
+                             '#diagnostico-funcional, #objetivos-terapeuticos, ' +
+                             '#indicaciones-casa, #criterios-alta, #seguimiento, ' +
+                             '#comentarios-fotos, #pa-input').forEach(el => {
+    el.value = el.defaultValue || '';  // Respeta el value="" del HTML (ej: PA vuelve a 120/80)
+  });
+
+  // 2. Restaurar selects a su opción por defecto
+  document.querySelectorAll('select').forEach(select => {
+    select.selectedIndex = 0;  // Primera opción
+  });
+
+  // 3. Restaurar sliders a sus valores predeterminados del HTML
+  const slidersDefaults = {
+    eva: 5,
+    fc: 115,
+    fr: 24,
+    temp: 37.1,
+    spo2: 99,
+    es: 10, di: 10, co: 10, pr: 10,
+    tac: 10, ter: 10, dol: 10,
+    avd: 5, tra: 5, esc: 5, mar: 5, alc: 5, tol: 5
+  };
+
+  Object.keys(slidersDefaults).forEach(id => {
+    const slider = document.getElementById(id);
+    const visual = document.getElementById(id + 'V');
+    if (slider && visual) {
+      slider.value = slidersDefaults[id];
+      visual.textContent = slider.value;
+    }
+  });
+
+  // 4. Desmarcar todos los checkboxes (antecedentes, postura, modalidades)
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+  });
+
+  // 5. Borrar firmas
+  if (window.sigP) sigP.clear();
+  if (window.sigF) sigF.clear();
+
+  // 6. Borrar imágenes subidas
+  imagesData = [null, null, null];
+  renderImagePreview();
+
+  // 7. Desmarcar consentimiento (opcional, pero recomendado)
+  document.getElementById('consentimiento-acepto').checked = false;
+
+  alert('¡Formulario limpiado! Los valores predeterminados se mantuvieron. Listo para un nuevo paciente.');
+}
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
@@ -671,4 +761,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
