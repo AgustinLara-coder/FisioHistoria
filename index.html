@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FisioHeav - Reporte Profesional</title>
+<title>FisioHeav</title>
 
 <link rel="manifest" href="manifest.json">
 
 <script src="libs/jspdf.umd.min.js"></script>
-<script src="libs/ signature_pad.umd.min.js"></script>
+<script src="libs/signature_pad.umd.min.js"></script>
 
 <style>
 /* COLORES DEL LOGO */
@@ -120,8 +120,8 @@ canvas {border:3px solid var(--morado);border-radius:16px;width:100%;height:200p
 
 <div class="cont">
 <header>
-  <img src="FisiHeavLogo.jpg" alt="FisioHeav">
-  <h1>FisioHeav</h1>
+  <img src="FisioHeavLogo.jpg" alt="FisioHeav">
+  <h1>Historia Clínica De Fisioterapia</h1>
 </header>
 
 <form id="form">
@@ -152,7 +152,7 @@ canvas {border:3px solid var(--morado);border-radius:16px;width:100%;height:200p
 <input id="nombre-paciente" placeholder="Nombre Completo *" required>
 <input id="edad-paciente" type="number" placeholder="Edad">
 <select id="genero-paciente"><option>Masculino</option><option>Femenino</option><option>Otro</option></select>
-<input id="tel-paciente" type="tel" placeholder="Teléfono">
+<input id="tel-paciente" type="tel" placeholder="Teléfono" pattern="\d{10}" required>
 <input id="ocupacion-paciente" placeholder="Ocupación">
 <select id="dominancia-paciente"><option>Diestro</option><option>Zurdo</option></select>
 </div>
@@ -304,7 +304,7 @@ expediente .**</textarea>
         <button type="button" class="limpiar" onclick="limpiarFirma('sigP')">Borrar Firma</button>
     </div>
     <div>
-        <label>Firma Fisio</label>
+        <label>Firma Fisioterapeuta</label>
         <canvas id="sigF"></canvas>
         <button type="button" class="limpiar" onclick="limpiarFirma('sigF')">Borrar Firma</button>
     </div>
@@ -407,20 +407,40 @@ function checks(id) {
 
 // PDF ACTUALIZADO
 async function generarPDF() {
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
+  // ==================== VALIDACIONES PREVIAS ====================
+  const nombrePaciente = document.getElementById('nombre-paciente').value.trim();
+  const telPaciente = document.getElementById('tel-paciente').value.trim();
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+  // Nombre obligatorio
+  if (nombrePaciente === '') {
+    alert('⚠️ Por favor, ingresa el Nombre Completo del paciente antes de generar el PDF.');
+    document.getElementById('nombre-paciente').focus();
+    return;
+  }
 
-    const primary = [142, 68, 173];
-    const lightGray = [245, 245, 248];
-    const darkGray = [90, 90, 90];
+  // Teléfono: exactamente 10 dígitos numéricos
+  if (!/^\d{10}$/.test(telPaciente)) {
+    alert('⚠️ El Teléfono debe contener exactamente 10 dígitos numéricos (ejemplo: 5541234567).');
+    document.getElementById('tel-paciente').focus();
+    return;
+  }
+  // ==============================================================
 
-    const logoURL = "https://scontent.ftgz1-1.fna.fbcdn.net/v/t39.30808-6/566228684_25020217447666386_1034558766853531360_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=B0GSWpfcMUMQ7kNvwGfHxtF&_nc_oc=Adl0oUrx4ZGWTb3CM9CV-6qITPCP-JxKcN43j_RMBYbHOmlBmShVfA62mszx50faTuE&_nc_zt=23&_nc_ht=scontent.ftgz1-1.fna&_nc_gid=gO3oNE9G78R6UWFn53Ly_A&oh=00_AfmGG1gj061o333dTAL1eoUo8RwdfgaOLICWcYXJiSFhyw&oe=693D630D";
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
 
-    let y = 35;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const logoURL = "FisioHeavLogo.jpg";
+
+    let y = 35;
+
+    // COLORES
+    const primary = [142, 68, 173];
+    const lightGray = [245, 245, 248];
+    const darkGray = [90, 90, 90];
 
     const drawHeader = () => {
       // Barra superior
@@ -441,212 +461,204 @@ async function generarPDF() {
       // Título PRINCIPAL CENTRADO Y MÁS GRANDE
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text("Reporte Clínico de Fisioterapia", pageWidth / 2, 13, { align: 'center' });
+      doc.text("Historia Clínica de Fisioterapia", pageWidth / 2, 13, { align: 'center' });
     };
 
-    const drawFooter = (pageNum) => {
-      doc.setFontSize(9);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Página ${pageNum}`, 20, pageHeight - 10);
-      doc.text("Documento clínico profesional", pageWidth - 20, pageHeight - 10, { align: 'right' });
-    };
+    const drawFooter = (pageNum) => {
+      doc.setFontSize(9);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Página ${pageNum}`, 20, pageHeight - 10);
+      doc.text("Historia Clínica FisioHeav", pageWidth - 20, pageHeight - 10, { align: 'right' });
+    };
 
-    let pageNum = 1;
+    let pageNum = 1;
 
-    const addNewPage = () => {
-      drawFooter(pageNum);
-      doc.addPage();
-      pageNum++;
-      drawHeader();
-      y = 30;
-    };
+    const addNewPage = () => {
+      drawFooter(pageNum);
+      doc.addPage();
+      pageNum++;
+      drawHeader();
+      y = 30;
+    };
 
-    // Primera página
-    drawHeader();
-    y = 30;
+    // Primera página
+    drawHeader();
+    y = 30;
 
-    const fecha = document.getElementById('fecha-reporte').value.split('-').reverse().join('/');
-    const folio = "FH-" + Date.now().toString().slice(-6);
+    const fecha = document.getElementById('fecha-reporte').value.split('-').reverse().join('/');
+    const folio = "FH-" + Date.now().toString().slice(-6);
 
-    // Helpers
-    const block = (title) => {
-      if (y > pageHeight - 25) addNewPage();
+    // Helpers
+    const block = (title) => {
+      if (y > pageHeight - 25) addNewPage();
 
-      doc.setFillColor(...lightGray);
-      doc.roundedRect(15, y, pageWidth - 30, 7, 2, 2, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...primary);
-      doc.setFontSize(11);
-      doc.text(title.toUpperCase(), 20, y + 5);
-      y += 10;
+      doc.setFillColor(...lightGray);
+      doc.roundedRect(15, y, pageWidth - 30, 7, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...primary);
+      doc.setFontSize(11);
+      doc.text(title.toUpperCase(), 20, y + 5);
+      y += 10;
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-    };
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+    };
 
-    const field = (label, value) => {
-      if (y > pageHeight - 15) addNewPage();
+    const field = (label, value) => {
+      if (y > pageHeight - 15) addNewPage();
 
-      doc.setFont('helvetica', 'bold');
-      doc.text(label + ":", 20, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(label + ":", 20, y);
 
-      doc.setFont('helvetica', 'normal');
-      const txt = (value || '-').trim();
-      const lines = doc.splitTextToSize(txt, pageWidth - 65);
-      doc.text(lines, 65, y);
+      doc.setFont('helvetica', 'normal');
+      const txt = (value || '-').trim();
+      const lines = doc.splitTextToSize(txt, pageWidth - 65);
+      doc.text(lines, 65, y);
 
-      y += (lines.length * 5) + 2;
-    };
+      y += (lines.length * 5) + 2;
+    };
 
-    // CONTENIDO
+    // ==================== CONTENIDO ====================
+    block("Datos Generales");
+    field("Profesional", "LFT. Isabel Catalina Herrera Avila");
+    field("Cédula", "15129903");
+    field("Clínica", "FisioHeav");
+    field("Fecha", fecha);
+    field("Folio", folio);
 
-    block("Datos Generales");
-    field("Profesional", "LFT. Isabel Catalina Herrera Avila");
-    field("Cédula", "15129903");
-    field("Clínica", "FisioHeav");
-    field("Fecha", fecha);
-    field("Folio", folio);
+    block("Datos del Paciente");
+    field("Nombre", nombrePaciente); // ya validado
+    field("Edad", get('edad-paciente'));
+    field("Género", document.getElementById('genero-paciente').value);
+    field("Teléfono", telPaciente); // ya validado
+    field("Ocupación", get('ocupacion-paciente'));
+    field("Dominancia", document.getElementById('dominancia-paciente').value);
 
-    block("Datos del Paciente");
-    field("Nombre", get('nombre-paciente'));
-    field("Edad", get('edad-paciente'));
-    field("Género", document.getElementById('genero-paciente').value);
-    field("Teléfono", get('tel-paciente'));
-    field("Ocupación", get('ocupacion-paciente'));
-    field("Dominancia", document.getElementById('dominancia-paciente').value);
+    block("Anamnesis");
+    field("Motivo de consulta", get('mc'));
+    field("Padecimiento actual", get('pa'));
+    field("Antecedentes", checks('antecedentes'));
 
-    block("Anamnesis");
-    field("Motivo de consulta", get('mc'));
-    field("Padecimiento actual", get('pa'));
-    field("Antecedentes", checks('antecedentes'));
+    block("Dolor (EVA)");
+    field("Dolor actual", document.getElementById('evaV').textContent + "/10");
+    field("Localización", get('localizacion-dolor'));
+    field("Irradiación", get('patron-irradiacion'));
 
-    block("Dolor (EVA)");
-    field("Dolor actual", document.getElementById('evaV').textContent + "/10");
-    field("Localización", get('localizacion-dolor'));
-    field("Irradiación", get('patron-irradiacion'));
+    block("Exploración Física");
+    field("Signos vitales",
+      `FC: ${document.getElementById('fcV').textContent} | FR: ${document.getElementById('frV').textContent} | PA: ${get('pa-input')} | Temp: ${document.getElementById('tempV').textContent}°C | SpO2: ${document.getElementById('spo2V').textContent}%`
+    );
 
-    block("Exploración Física");
-    field("Signos vitales",
-      `FC: ${document.getElementById('fcV').textContent} | FR: ${document.getElementById('frV').textContent} | PA: ${get('pa-input')} | Temp: ${document.getElementById('tempV').textContent}°C | SpO2: ${document.getElementById('spo2V').textContent}%`
-    );
+    field("Balance y coordinación",
+      `Estático: ${document.getElementById('esV').textContent}/10, ` +
+      `Dinámico: ${document.getElementById('diV').textContent}/10, ` +
+      `Coordinación: ${document.getElementById('coV').textContent}/10, ` +
+      `Propiocepción: ${document.getElementById('prV').textContent}/10`
+    );
 
-    field("Balance y coordinación",
-      `Estático: ${document.getElementById('esV').textContent}/10, ` +
-      `Dinámico: ${document.getElementById('diV').textContent}/10, ` +
-      `Coordinación: ${document.getElementById('coV').textContent}/10, ` +
-      `Propiocepción: ${document.getElementById('prV').textContent}/10`
-    );
+    field("ROM activo", get('rom-activo'));
+    field("ROM pasivo", get('rom-pasivo'));
+    field("Fuerza muscular", get('fuerza-muscular'));
+    field("Tono muscular", document.getElementById('tono-muscular').value);
 
-    field("ROM activo", get('rom-activo'));
-    field("ROM pasivo", get('rom-pasivo'));
-    field("Fuerza muscular", get('fuerza-muscular'));
-    field("Tono muscular", document.getElementById('tono-muscular').value);
+    block("Postura y Marcha");
+    field("Tipo de marcha", document.getElementById('marcha-tipo').value);
+    field("Asistencia", document.getElementById('asistencia-marcha').value);
+    field("Postura", checks('postura'));
 
-    block("Postura y Marcha");
-    field("Tipo de marcha", document.getElementById('marcha-tipo').value);
-    field("Asistencia", document.getElementById('asistencia-marcha').value);
-    field("Postura", checks('postura'));
-
-    const valoracionFuncionalHeight = 10 + (7 * 7) + 20; 
-    if (y + valoracionFuncionalHeight > pageHeight - 25) {
-      addNewPage();
-    }
-    
-    block("Valoración Funcional");
-    field("AVDs", document.getElementById('avdV').textContent + "/10");
-    field("Transferencias", document.getElementById('traV').textContent + "/10");
-    field("Escaleras", document.getElementById('escV').textContent + "/10");
-    field("Marcha", document.getElementById('marV').textContent + "/10");
-    field("Alcance", document.getElementById('alcV').textContent + "/10");
-    field("Tolerancia al esfuerzo", document.getElementById('tolV').textContent + "/10");
-
-    block("Diagnóstico y Plan");
-    field("Diagnóstico funcional", get('diagnostico-funcional'));
-    field("Estado de la lesión", document.getElementById('estado-lesion').value);
-    field("Pronóstico corto plazo", document.getElementById('pronostico-corto').value);
-    field("Pronóstico largo plazo", document.getElementById('pronostico-largo').value);
-    field("Objetivos terapéuticos", get('objetivos-terapeuticos'));
-    field("Modalidades", checks('modalidades'));
-    field("Indicaciones para casa", get('indicaciones-casa'));
-    field("Criterios de alta", get('criterios-alta'));
-    field("Seguimiento", get('seguimiento'));
-
-    // ===== PÁGINA FINAL con Documentación y Firmas =====
-    addNewPage();
-
-    block("Documentación y Firmas");
-
-    // Impresión del Consentimiento (Texto y Aceptación)
-    doc.setFont('helvetica', 'bold');
-    doc.text("Consentimiento Informado:", 20, y);
-    y += 5;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const consentimientoTexto = document.getElementById('consentimiento-texto').value;
-    const consentimientoLines = doc.splitTextToSize(consentimientoTexto, pageWidth - 30);
-    doc.text(consentimientoLines, 20, y);
-    y += (consentimientoLines.length * 4) + 2;
-
-    // Estado de Aceptación
-    const acepto = document.getElementById('consentimiento-acepto').checked ? 'SÍ, Aceptado' : 'NO Aceptado';
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...primary);
-    doc.text(`Estado de Aceptación: ${acepto}`, 20, y);
-    y += 10;
-    doc.setTextColor(0, 0, 0); // Restaurar color
-    
-    // Comentarios sobre fotografías
-    field("Comentarios", get('comentarios-fotos'));
-    y += 5;
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Imágenes clínicas:", 20, y);
-    y += 5;
+    const valoracionFuncionalHeight = 10 + (7 * 7) + 20; 
+    if (y + valoracionFuncionalHeight > pageHeight - 25) {
+      addNewPage();
+    }
     
-    // Impresión de las imágenes desde el array imagesData (que contiene solo las subidas)
-    const uploadedImages = imagesData.filter(data => data !== null);
-    let x = 20;
+    block("Valoración Funcional");
+    field("AVDs", document.getElementById('avdV').textContent + "/10");
+    field("Transferencias", document.getElementById('traV').textContent + "/10");
+    field("Escaleras", document.getElementById('escV').textContent + "/10");
+    field("Marcha", document.getElementById('marV').textContent + "/10");
+    field("Alcance", document.getElementById('alcV').textContent + "/10");
+    field("Tolerancia al esfuerzo", document.getElementById('tolV').textContent + "/10");
 
-    uploadedImages.forEach((data, i) => {
-      if (i > 0 && i % 3 === 0) { x = 20; y += 50; }
-      if (y > pageHeight - 70) addNewPage(); // Chequeo antes de añadir imagen
+    block("Diagnóstico y Plan");
+    field("Diagnóstico funcional", get('diagnostico-funcional'));
+    field("Estado de la lesión", document.getElementById('estado-lesion').value);
+    field("Pronóstico corto plazo", document.getElementById('pronostico-corto').value);
+    field("Pronóstico largo plazo", document.getElementById('pronostico-largo').value);
+    field("Objetivos terapéuticos", get('objetivos-terapeuticos'));
+    field("Modalidades", checks('modalidades'));
+    field("Indicaciones para casa", get('indicaciones-casa'));
+    field("Criterios de alta", get('criterios-alta'));
+    field("Seguimiento", get('seguimiento'));
+
+    // ===== PÁGINA FINAL con Documentación y Firmas =====
+    addNewPage();
+
+    block("Documentación y Firmas");
+
+    doc.setFont('helvetica', 'bold');
+    doc.text("Consentimiento Informado:", 20, y);
+    y += 5;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    const consentimientoTexto = document.getElementById('consentimiento-texto').value;
+    const consentimientoLines = doc.splitTextToSize(consentimientoTexto, pageWidth - 30);
+    doc.text(consentimientoLines, 20, y);
+    y += (consentimientoLines.length * 4) + 2;
+
+    const acepto = document.getElementById('consentimiento-acepto').checked ? 'SÍ, Aceptado' : 'NO Aceptado';
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...primary);
+    doc.text(`Estado de Aceptación: ${acepto}`, 20, y);
+    y += 10;
+    doc.setTextColor(0, 0, 0);
+
+    field("Comentarios", get('comentarios-fotos'));
+    y += 5;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Imágenes clínicas:", 20, y);
+    y += 5;
+    
+    const uploadedImages = imagesData.filter(data => data !== null);
+    let x = 20;
+
+    uploadedImages.forEach((data, i) => {
+      if (i > 0 && i % 3 === 0) { x = 20; y += 50; }
+      if (y > pageHeight - 70) addNewPage();
       
-      try { doc.addImage(data.src, 'JPEG', x, y, 45, 45); } catch (e) { console.error("Error al añadir imagen:", e); }
-      x += 55; // Ajustar espacio entre imágenes
-    });
+      try { doc.addImage(data.src, 'JPEG', x, y, 45, 45); } catch (e) { console.error("Error al añadir imagen:", e); }
+      x += 55;
+    });
     
-    // Asegurar espacio para las firmas
-    y += 60;
+    y += 60;
     if (y > pageHeight - 50) addNewPage();
 
-    const firma = (label, sig, posX) => {
-      if (sig && !sig.isEmpty()) doc.addImage(sig.toDataURL(), 'PNG', posX, y, 60, 25);
-      doc.line(posX, y + 30, posX + 60, y + 30);
-      doc.setFontSize(10);
-      doc.text(label, posX + 30, y + 35, { align: 'center' });
-    };
+    const firma = (label, sig, posX) => {
+      if (sig && !sig.isEmpty()) doc.addImage(sig.toDataURL(), 'PNG', posX, y, 60, 25);
+      doc.line(posX, y + 30, posX + 60, y + 30);
+      doc.setFontSize(10);
+      doc.text(label, posX + 30, y + 35, { align: 'center' });
+    };
 
-    firma("Firma del Paciente", sigP, 30);
-    firma("Firma del Fisioterapeuta", sigF, pageWidth - 90);
+    firma("Firma del Paciente", sigP, 30);
+    firma("Firma del Fisioterapeuta", sigF, pageWidth - 90);
 
-    // Pie última página
-    drawFooter(pageNum);
+    drawFooter(pageNum);
 
-    doc.save(`FisioHeav_${get('nombre-paciente').replace(/[^a-zA-Z0-9 ]/g, '_')}_${fecha.replace(/\//g, '-')}.pdf`);
+    // Nombre del archivo con el nombre del paciente ya validado
+    doc.save(`FisioHeav_${nombrePaciente.replace(/[^a-zA-Z0-9 ]/g, '_')}_${fecha.replace(/\//g, '-')}.pdf`);
 
-  } catch (e) {
-    console.error(e);
-    alert("Error: " + e.message);
-  }
+  } catch (e) {
+    console.error(e);
+    alert("Error al generar el PDF: " + e.message);
+  }
 }
 
-// ✅ PWA: REGISTRO DEL SERVICE WORKER (Añadido aquí)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // Asegúrate de que la ruta a sw.js sea correcta. Usamos el raíz (/)
         navigator.serviceWorker.register('sw.js')
             .then(registration => {
                 console.log('ServiceWorker registrado con éxito:', registration.scope);
@@ -658,5 +670,5 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 </body>
-
 </html>
+
